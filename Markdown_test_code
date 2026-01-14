@@ -1,7 +1,7 @@
 import re
 
 text = "this is text with a ![rick roll](https://i.imgur.com/aKa0qIh.gif) and ![obi wan](https://i.imgur.com/fJRm4k.jpeg) this is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com)"
-
+text2 = "this has no links or images."
 
 
 
@@ -13,8 +13,11 @@ def extract_markdown_links(text):
     matches = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
     return matches
 
-matches = extract_markdown_images(text)
-matches_links = extract_markdown_links(text)
+matches = extract_markdown_images(text2)
+matches_links = extract_markdown_links(text2)
 
-print("matches for images:",matches)
+print("matches for images:", matches)
 print("matches for links:", matches_links)
+
+#the line below checks if a list is empty. 
+print(not[])
