@@ -1,7 +1,33 @@
 import re
+from enum import Enum
 
-text = "this is text with a ![rick roll](https://i.imgur.com/aKa0qIh.gif) and ![obi wan](https://i.imgur.com/fJRm4k.jpeg) this is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com)"
+text = "this is text with a ![rick roll](https://i.imgur.com/aKa0qIh.gif) and ![obi wan](https://i.imgur.com/fJRm4k.jpeg)there's more words here. "
 text2 = "this has no links or images."
+text3 =  "this is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com)      f"
+
+class TextType(Enum):
+    PLAIN_TEXT = "plain"
+    BOLD_TEXT = "bold"
+    ITALIC_TEXT = "italic"
+    CODE_TEXT = "code"
+    LINK = "links"
+    IMAGE = "images"
+
+class TextNode:
+
+    def __init__(self, text, text_type, url=None):
+       self.text = text
+       self.text_type = text_type
+       self.url = url
+    def __repr__(self):
+        return f"TextNode({self.text}, {self.text_type.value}, {self.url})"
+
+
+node1 = TextNode(text,TextType.PLAIN_TEXT)
+node2 = TextNode(text2,TextType.PLAIN_TEXT)
+node3 = TextNode(text3,TextType.PLAIN_TEXT)
+
+nodes = [node1,node2,node3]
 
 
 
@@ -12,12 +38,74 @@ def extract_markdown_images(text):
 def extract_markdown_links(text):
     matches = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
     return matches
-
+"""
 matches = extract_markdown_images(text2)
-matches_links = extract_markdown_links(text2)
+matches_links = extract_markdown_links(text3)
 
-print("matches for images:", matches)
-print("matches for links:", matches_links)
-
+#print("matches for images:", matches)
+#print("matches for links:", matches_links)
+text3copy = text3
+for match in matches_links:
+    name,link = match
+    the_split =text3copy.split(f"[{name}]({link})",1)
+    #print("first Split :",the_split)
+    the_split.pop(0)
+    text3copy = "".join(the_split)
+    #print("text copy", text3copy , " end")
+    
+    
+    #print("*"*10)
 #the line below checks if a list is empty. 
-print(not[])
+if text3copy.strip() != "":
+    #print("has items:",text3copy)
+else:
+    #print("has no items")
+"""
+#change text to old nodes, also change text to node.text when putting it in for your project
+def split_nodes_image(old_nodes):
+    #create nodes list to return
+    new_nodes = []
+    #loop through the old nodes
+    for node in old_nodes:
+        #store image links in a list from the node
+        images = extract_markdown_images(node.text)
+        text_copy = node.text
+        #if the list is empty add the full node to the new nodes return list and continue
+        if not images:
+            #create node to return
+            new_nodes.append(node)
+            continue
+        for image in images:
+            txt,url = image
+            the_split =text_copy.split(f"![{txt}]({url})",1)
+            new_nodes.append(TextNode(the_split[0], TextType.PLAIN_TEXT))
+            new_nodes.append(TextNode(txt,TextType.IMAGE,url))
+            the_split.pop(0)
+            text_copy = "".join(the_split)
+        if text_copy.strip() != "":
+            new_nodes.append(TextNode(text_copy.rstrip(),TextType.PLAIN_TEXT))
+        
+    
+    #loop through the list to separate image links and text nodes and add those to the return list
+    
+    return new_nodes
+    
+nodes_list = split_nodes_image(nodes)
+for node in nodes_list:
+    print(node)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
