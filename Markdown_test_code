@@ -61,7 +61,26 @@ if text3copy.strip() != "":
 else:
     #print("has no items")
 """
-#change text to old nodes, also change text to node.text when putting it in for your project
+def split_nodes_link(old_nodes): 
+    new_nodes = []
+    for node in old_nodes:
+        links = extract_markdown_links(node.text)
+        text_copy = node.text
+        if not links:
+            new_nodes.append(node)
+            continue
+        for link in links:
+            txt,url = link
+            the_split = text_copy.split(f"[{txt}]({url})",1)
+            new_nodes.append(TextNode(the_split[0],TextType.PLAIN_TEXT))
+            new_nodes.append(TextNode(txt,TextType.LINK,url))
+            the_split.pop(0)
+            text_copy = "".join(the_split)
+        if text_copy.strip() != "":
+            new_nodes.append(TextNode(text_copy.rstrip(),TextType.PLAIN_TEXT))
+    return new_nodes
+
+
 def split_nodes_image(old_nodes):
     #create nodes list to return
     new_nodes = []
@@ -77,20 +96,19 @@ def split_nodes_image(old_nodes):
             continue
         for image in images:
             txt,url = image
-            the_split =text_copy.split(f"![{txt}]({url})",1)
+            the_split = text_copy.split(f"![{txt}]({url})",1)
             new_nodes.append(TextNode(the_split[0], TextType.PLAIN_TEXT))
             new_nodes.append(TextNode(txt,TextType.IMAGE,url))
             the_split.pop(0)
             text_copy = "".join(the_split)
         if text_copy.strip() != "":
             new_nodes.append(TextNode(text_copy.rstrip(),TextType.PLAIN_TEXT))
-        
-    
+            
     #loop through the list to separate image links and text nodes and add those to the return list
     
     return new_nodes
     
-nodes_list = split_nodes_image(nodes)
+nodes_list = split_nodes_link(nodes)
 for node in nodes_list:
     print(node)
     
