@@ -80,7 +80,7 @@ def split_nodes_link(old_nodes):
             new_nodes.append(TextNode(text_copy.rstrip(),TextType.PLAIN_TEXT))
     return new_nodes
 
-
+#change text to old nodes, also change text to node.text when putting it in for your project
 def split_nodes_image(old_nodes):
     #create nodes list to return
     new_nodes = []
@@ -109,8 +109,9 @@ def split_nodes_image(old_nodes):
     return new_nodes
     
 nodes_list = split_nodes_link(nodes)
+nodes_list = split_nodes_image(nodes_list)
 for node in nodes_list:
-    print(node)
+    print(node, ": ", node.text_type)
     
     
     
