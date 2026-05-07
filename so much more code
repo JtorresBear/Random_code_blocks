@@ -1,0 +1,412 @@
+from enum import Enum
+import re
+
+class HTMLNode:
+    def __init__(self,tag=None,value=None,children=None,props=None):
+        self.tag = tag
+        self.value = value
+        self.children = children
+        self.props =  props
+
+    def to_html(self):
+        raise NotImplementedError("This hasn't implemented yet")
+
+    def props_to_html(self):
+        if not self.props:
+            return ""
+        keys = list(self.props.keys())
+        values = list(self.props.values())
+        attributes_string = ""
+
+        for i in range(0,len(keys)):
+            attributes_string = attributes_string + f' {keys[i]}="{values[i]}"'
+        
+        return attributes_string
+    
+    def __repr__(self):
+        return f"HTMLNode({self.tag}, {self.value}, children: {self.children}, {self.props})"
+
+    def get_tag(self):
+        return self.tag
+    
+    def get_props(self):
+        return self.props
+        
+    
+class ParentNode(HTMLNode):
+
+    def __init__(self, tag, children, props=None):
+        super().__init__(tag, value=None, children=children, props=props)
+
+    def to_html(self):
+        if self.tag is None:
+            raise ValueError("NO TAG?!")
+        
+        if self.children is None or not self.children:
+            raise ValueError("NO CHILDREN?!")
+        return_string = f"<{self.tag}>"
+        for child in self.children:
+            return_string += child.to_html()
+        return_string += f"</{self.tag}>"
+        return return_string
+
+class LeafNode(HTMLNode):
+    def __init__(self, tag, value, props=None):
+        super().__init__(tag, value, children=None, props=props)
+        
+
+    def to_html(self):
+
+        if self.value is None:
+            raise ValueError("There isn't a value")
+        if self.tag is None:
+            return str(self.value)
+        
+        return_string = f"<{self.tag}{self.props_to_html()}>{str(self.value)}</{self.tag}>"
+
+        return return_string
+
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE =  "quote"
+    UNORDERED_LIST = "unordered list"
+    ORDERED_LIST = "ordered list "
+
+
+
+def block_to_block_type(block):
+    if re.match(r'^#{1,6} ', block):
+        return BlockType.HEADING
+    if re.search(r'^```[\s\S]*```\s*$', block):
+        return BlockType.CODE
+    if re.match(r'^>',block):
+        return BlockType.QUOTE
+    if re.match(r'^- ',block):
+        if is_unordered(block):
+            return BlockType.UNORDERED_LIST
+    if re.match(r'^\d. ',block):
+        if is_in_order(block):
+            return BlockType.ORDERED_LIST
+    return BlockType.PARAGRAPH
+
+def is_in_order(text):
+    
+    lines = text.split("\n")
+    for i,line in enumerate(lines):
+        expected_val = i + 1
+        if not line.startswith(f'{expected_val}'):
+            return False
+    
+    return True
+
+def is_unordered(text):
+    lines = text.split("\n")
+    for line in lines:
+        if not line.startswith(f'- '):
+            return False
+    return True
+
+def markdown_to_blocks(markdown):
+    temp_list_of_blocks = markdown.split("\n\n")
+    list_of_blocks = []
+    for block in temp_list_of_blocks:
+        new_block = block.strip()
+        if new_block != "":
+            list_of_blocks.append(new_block)
+    return list_of_blocks
+
+def split_nodes_delimiter(old_nodes,delimiter, text_type):
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+        split_string = node.text.split(delimiter)
+        if len(split_string) % 2 == 0:
+            raise Exception("That's invalid Markdown syntax")
+        else:
+            for i,str in enumerate(split_string):
+                if i % 2 == 0:
+                    new_nodes.append(TextNode(str,TextType.TEXT))
+                else:
+                    new_nodes.append(TextNode(str,text_type))
+        #print(split_string,"length:", len(split_string) )
+    return new_nodes 
+
+def extract_markdown_images(text):
+    matches = re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
+    return matches
+
+def extract_markdown_links(text):
+    matches = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
+    return matches
+
+def split_nodes_link(old_nodes): 
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+        links = extract_markdown_links(node.text)
+        text_copy = node.text
+        if not links:
+            new_nodes.append(node)
+            continue
+        for link in links:
+            txt,url = link
+            the_split = text_copy.split(f"[{txt}]({url})",1)
+            if the_split[0] != "":
+                new_nodes.append(TextNode(the_split[0],TextType.TEXT))
+            new_nodes.append(TextNode(txt,TextType.LINK,url))
+            
+            text_copy = the_split[1]
+        if text_copy != "":
+            new_nodes.append(TextNode(text_copy,TextType.TEXT))
+    return new_nodes
+
+def split_nodes_image(old_nodes):
+    #create nodes list to return
+    new_nodes = []
+    #loop through the old nodes
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+        #store image links in a list from the node
+        images = extract_markdown_images(node.text)
+        text_copy = node.text
+        #if the list is empty add the full node to the new nodes return list and continue
+        if not images:
+            #create node to return
+            new_nodes.append(node)
+            continue
+        for image in images:
+            txt,url = image
+            the_split = text_copy.split(f"![{txt}]({url})",1)
+            if the_split[0] != "":
+                new_nodes.append(TextNode(the_split[0],TextType.TEXT))
+            new_nodes.append(TextNode(txt,TextType.IMAGE,url))
+            text_copy = the_split[1]
+        if text_copy != "":
+            new_nodes.append(TextNode(text_copy,TextType.TEXT))
+            
+    #loop through the list to separate image links and text nodes and add those to the return list
+    
+    return new_nodes
+
+def text_to_textnodes(text):
+    nodes_list = [TextNode(text,TextType.TEXT)]
+    nodes_list = split_nodes_delimiter(nodes_list,"`",TextType.CODE)
+    nodes_list = split_nodes_delimiter(nodes_list,"**",TextType.BOLD)
+    nodes_list = split_nodes_delimiter(nodes_list,"_",TextType.ITALIC)
+    nodes_list = split_nodes_link(nodes_list)
+    nodes_list = split_nodes_image(nodes_list)
+    
+    return nodes_list
+
+class TextType(Enum):
+    TEXT = "text"
+    BOLD = "bold"
+    ITALIC = "italic"
+    CODE = "code"
+    LINK = "links"
+    IMAGE = "images"
+
+
+class TextNode:
+
+    def __init__(self, text, text_type, url=None):
+       self.text = text
+       self.text_type = text_type
+       self.url = url
+    
+    def __eq__(self, other):
+        if self.text != other.text:
+            return False
+        if self.text_type != other.text_type:
+            return False
+        if self.url != other.url:
+            return False
+        return True
+    
+    def __repr__(self):
+        return f"TextNode({self.text}, {self.text_type.value}, {self.url})"
+
+
+def text_node_to_html_node(text_node):
+    match text_node.text_type:
+        case TextType.TEXT:
+            return LeafNode(None,text_node.text,None)
+        case TextType.BOLD:
+            return LeafNode("b",text_node.text,None)
+        case TextType.ITALIC:
+            return LeafNode("i",text_node.text,None)
+        case TextType.CODE:
+            return LeafNode("code",text_node.text,None)
+        case TextType.LINK:
+            return LeafNode("a",text_node.text,{"href":text_node.url})
+        case TextType.IMAGE:
+            return LeafNode("img","",{"src":text_node.url,"alt":text_node.text})
+        case _:
+            raise Exception("Not a usable type")
+
+
+test_string = """
+# this is the title
+
+## this is **the** title
+
+### this is the title
+
+#### this is the title
+
+##### this is the title
+
+###### this is the title
+
+########### this is the title
+
+1. do things
+2. do other things
+3. do more things
+
+```
+this is a code block
+it will do this and that 
+         and this and that 
+         
+         and that and this 
+```
+
+this is a random paragraph. it will have a new line. 
+but we don't care about new lines just multi empty lines
+
+
+
+> this is a QUOTE
+> this is a quote with **bold** and _italic_
+> and just random. 
+
+
+
+
+
+- this is a list
+- lists have **this** and that
+- also all we need is perfectly written strings.
+"""
+
+
+
+
+
+
+
+
+
+
+def markdown_to_html_node(markdown):
+    #create list of html_nodes
+    body_html = []
+    #split markdown to blocks
+    Blocks = markdown_to_blocks(markdown)
+    #loop over each block
+    for block in Blocks:
+        if block_to_block_type(block) == BlockType.HEADING:
+            body_html.append(heading_to_html(block))
+        elif block_to_block_type(block) == BlockType.CODE:
+            body_html.append(code_to_html(block))
+        elif block_to_block_type(block) == BlockType.QUOTE:
+            body_html.append(quote_to_html(block))
+        elif block_to_block_type(block) == BlockType.UNORDERED_LIST:
+            body_html.append(unordered_list_to_html(block))
+    # make each block an html node with child nodes that correspond. example html paragraph with bold and italic text
+    # cont. that would be a parent node with leaf nodes. 
+    
+
+    return "html node"
+
+
+    
+def heading_to_html(block):
+    headcount = 0
+    while block[headcount] == "#":
+        headcount = headcount + 1 
+    block = block.lstrip("#").strip()
+    parent_node = ParentNode(f"h{headcount}",text_to_children(block))
+    #print(parent_node.to_html())
+    return parent_node
+
+def code_to_html(block):
+    lines = block.split("\n")
+    middle = lines[1:-1]
+    content = "\n".join(middle) + "\n"
+    node = TextNode(content,TextType.TEXT)
+    html = text_node_to_html_node(node)
+    code_html = ParentNode("code",[html])
+    parent_node = ParentNode("pre",[code_html])
+    #print(parent_node.to_html())
+    return parent_node
+    
+def quote_to_html(block):
+    lines = block.split("\n")
+    cleaned = []
+    for line in lines:
+        line = line.lstrip(">").strip()
+        cleaned.append(line)
+    text = " ".join(cleaned)
+    children = text_to_children(text)
+    parent_node = ParentNode("blockquote",[children])
+    #print(parent_node.to_html())
+    return parent_node
+    
+def unordered_list_to_html(block):
+    lines = block.split("\n")
+    html_nodes = []
+    for line in lines:
+        line = line[2:]
+        html_nodes.append(ParentNode("li",text_to_children(line)))
+    parent_node = ParentNode("ul",html_nodes)
+    print(parent_node.to_html())
+    return parent_node
+    
+def text_to_children(text):
+    text_nodes = text_to_textnodes(text)
+    html_nodes = []
+    for node in text_nodes:
+        html_node = text_node_to_html_node(node)
+        html_nodes.append(html_node)
+    return html_nodes
+
+markdown_to_html_node(test_string)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
