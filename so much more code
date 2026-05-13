@@ -269,8 +269,16 @@ test_string = """
 ########### this is the title
 
 1. do things
-2. do other things
-3. do more things
+2. do other **things**
+3. do _more_ things
+4. do things
+5. do things
+6. do things
+7. isabela 
+8. swagger
+9. booo
+10. blank
+
 
 ```
 this is a code block
@@ -322,6 +330,8 @@ def markdown_to_html_node(markdown):
             body_html.append(quote_to_html(block))
         elif block_to_block_type(block) == BlockType.UNORDERED_LIST:
             body_html.append(unordered_list_to_html(block))
+        elif block_to_block_type(block) == BlockType.ORDERED_LIST:
+            body_html.append(ordered_list_to_html(block))
     # make each block an html node with child nodes that correspond. example html paragraph with bold and italic text
     # cont. that would be a parent node with leaf nodes. 
     
@@ -369,6 +379,16 @@ def unordered_list_to_html(block):
         line = line[2:]
         html_nodes.append(ParentNode("li",text_to_children(line)))
     parent_node = ParentNode("ul",html_nodes)
+    #print(parent_node.to_html())
+    return parent_node
+    
+def ordered_list_to_html(block):
+    lines = block.split("\n")
+    html_nodes = []
+    for line_n, line in enumerate(lines):
+        line = line[len(f"{line_n}") + 2:]
+        html_nodes.append(ParentNode("li",text_to_children(line)))
+    parent_node = ParentNode("ol",html_nodes)
     print(parent_node.to_html())
     return parent_node
     
@@ -383,14 +403,26 @@ def text_to_children(text):
 markdown_to_html_node(test_string)
 
 
+r_list = ["random","other","word","swag","random","other","word",
+"swag","random","other","word","swag","random","other","word",
+"swag","random","other","word","swag","random","other","word","swag",
+"random","other","word","swag","random","other","word","swag","random",
+"other","word","swag","random","other","word","swag","random","other",
+"word","swag","random","other","word","swag","random","other","word","swag",
+"random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag","random","other","word","swag"]
+
+def do_thing(text):
+    word_c = 0
+    for index,word in enumerate(r_list):
+        print(word)
+        print(len(f"{index}"))
+        word_c += 1
+    print(word_c)
 
 
 
 
-
-
-
-
+#do_thing(r_list)
 
 
 
