@@ -324,17 +324,26 @@ def markdown_to_html_node(markdown):
     for block in Blocks:
         if block_to_block_type(block) == BlockType.HEADING:
             body_html.append(heading_to_html(block))
+            print("H W")
         elif block_to_block_type(block) == BlockType.CODE:
             body_html.append(code_to_html(block))
+            print("C W")
         elif block_to_block_type(block) == BlockType.QUOTE:
             body_html.append(quote_to_html(block))
+            print("Q W")
         elif block_to_block_type(block) == BlockType.UNORDERED_LIST:
             body_html.append(unordered_list_to_html(block))
+            print("U W")
         elif block_to_block_type(block) == BlockType.ORDERED_LIST:
             body_html.append(ordered_list_to_html(block))
+            print("O W")
+        else: 
+            body_html.append(paragraph_to_html(block))
+            print("P W")
     # make each block an html node with child nodes that correspond. example html paragraph with bold and italic text
     # cont. that would be a parent node with leaf nodes. 
-    
+    div = ParentNode("div",body_html)
+    print(div.to_html())
 
     return "html node"
 
@@ -368,7 +377,7 @@ def quote_to_html(block):
         cleaned.append(line)
     text = " ".join(cleaned)
     children = text_to_children(text)
-    parent_node = ParentNode("blockquote",[children])
+    parent_node = ParentNode("blockquote",children)
     #print(parent_node.to_html())
     return parent_node
     
@@ -376,7 +385,7 @@ def unordered_list_to_html(block):
     lines = block.split("\n")
     html_nodes = []
     for line in lines:
-        line = line[2:]
+        line = line[2:].strip()
         html_nodes.append(ParentNode("li",text_to_children(line)))
     parent_node = ParentNode("ul",html_nodes)
     #print(parent_node.to_html())
@@ -386,10 +395,19 @@ def ordered_list_to_html(block):
     lines = block.split("\n")
     html_nodes = []
     for line_n, line in enumerate(lines):
-        line = line[len(f"{line_n}") + 2:]
+        line = line[len(f"{line_n + 1}") + 2:].strip()
         html_nodes.append(ParentNode("li",text_to_children(line)))
     parent_node = ParentNode("ol",html_nodes)
-    print(parent_node.to_html())
+    #print(parent_node.to_html())
+    return parent_node
+
+def paragraph_to_html(block):
+    lines = block.split("\n")
+    paragraph = " ".join(lines).strip()
+    html_node = text_to_children(paragraph)
+    
+    parent_node = ParentNode("p",html_node)
+    #print(parent_node.to_html())
     return parent_node
     
 def text_to_children(text):
